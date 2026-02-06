@@ -1,0 +1,15 @@
+Create 'hr_users' entity schema with following spec.
+```
+id (primary key, auto-increment)
+email (string, unique, required)
+password_hash (string, required)
+name (string, required)
+created_at (timestamp, default now)
+updated_at (timestamp, default now)
+```
+
+It will reside in 'auth' module.
+Create corresponding database migration.
+Create corresponding database seed.
+
+What context do you need?
