@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import express, { Application, Request, Response } from 'express';
 import morgan from 'morgan';
 import helmet from 'helmet';
+import { env } from 'process';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import { container } from 'tsyringe';
@@ -12,7 +13,7 @@ import { errorHandler, notFoundHandler } from './common/middlewares/error.middle
 import { ResponseUtil } from './common/utils/response.util';
 
 import authRoutes from './modules/auth/auth.route';
-import { env } from 'process';
+import employeeRoutes from './modules/employee/employee.route';
 
 // Register dependencies
 container.register(DatabaseConfig, { useClass: DatabaseConfig });
@@ -96,6 +97,7 @@ class App {
     // Module routes will be added here
     // Example: this.app.use(`${apiPrefix}/auth`, authRoutes);
     this.app.use(`${apiPrefix}/auth`, authRoutes);
+    this.app.use(`${apiPrefix}/employees`, employeeRoutes);
   }
 
   private initializeErrorHandling(): void {

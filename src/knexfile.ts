@@ -4,9 +4,6 @@ import path from 'path';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
-console.log('CWD: ', path.resolve(__dirname, '..', '.env'));
-console.log('DB password: ', process.env.DB_PASSWORD);
-
 const config: { [key: string]: Knex.Config } = {
   development: {
     client: 'postgresql',

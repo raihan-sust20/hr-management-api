@@ -6,7 +6,7 @@ import { AppError } from './error.middleware';
 import { HTTP_STATUS, ERROR_CODES } from '../constants/http-status.constant';
 
 export class UploadMiddleware {
-  private static uploadPath = process.env.UPLOAD_PATH || './uploads';
+  private static uploadPath = './uploads';
   private static maxFileSize = parseInt(process.env.MAX_FILE_SIZE || '5242880', 10); // 5MB default
 
   // Ensure upload directory exists
@@ -48,25 +48,19 @@ export class UploadMiddleware {
     }
   };
 
-  private static documentFilter = (
+  private static jpegOnlyFilter = (
     _req: Request,
     file: Express.Multer.File,
     cb: FileFilterCallback
   ): void => {
-    const allowedMimes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ];
+    const allowedMimes = ['image/jpeg', 'image/jpg'];
 
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(
         new AppError(
-          'Invalid file type. Only PDF, DOC, DOCX, XLS, and XLSX files are allowed.',
+          'Invalid file type. Only JPEG images are allowed.',
           HTTP_STATUS.BAD_REQUEST,
           ERROR_CODES.FILE_UPLOAD_ERROR
         )
@@ -84,6 +78,16 @@ export class UploadMiddleware {
     }).single('photo');
   }
 
+  public static uploadJpegOnly() {
+    return multer({
+      storage: this.storage,
+      fileFilter: this.jpegOnlyFilter,
+      limits: {
+        fileSize: this.maxFileSize,
+      },
+    }).single('photo');
+  }
+
   public static uploadImages(maxCount: number = 10) {
     return multer({
       storage: this.storage,
@@ -92,34 +96,5 @@ export class UploadMiddleware {
         fileSize: this.maxFileSize,
       },
     }).array('photos', maxCount);
-  }
-
-  public static uploadDocument() {
-    return multer({
-      storage: this.storage,
-      fileFilter: this.documentFilter,
-      limits: {
-        fileSize: this.maxFileSize,
-      },
-    }).single('document');
-  }
-
-  public static uploadDocuments(maxCount: number = 10) {
-    return multer({
-      storage: this.storage,
-      fileFilter: this.documentFilter,
-      limits: {
-        fileSize: this.maxFileSize,
-      },
-    }).array('documents', maxCount);
-  }
-
-  public static uploadAny() {
-    return multer({
-      storage: this.storage,
-      limits: {
-        fileSize: this.maxFileSize,
-      },
-    }).any();
   }
 }
