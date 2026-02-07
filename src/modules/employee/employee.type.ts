@@ -20,6 +20,17 @@ export interface ICreateEmployeeDto {
   salary: number;
 }
 
+// DTO for updating employee (all fields optional - partial update)
+export interface IUpdateEmployeeDto {
+  name?: string;
+  designation?: string;
+  hiring_date?: string; // Date string in format YYYY-MM-DD
+  date_of_birth?: string; // Date string in format YYYY-MM-DD
+  salary?: number;
+  // Note: photo handled separately via multipart, not in DTO
+  // Note: age is auto-calculated from date_of_birth if provided
+}
+
 // Response DTO with full photo URL
 export interface IEmployeeResponseDto {
   id: number;

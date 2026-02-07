@@ -19,4 +19,11 @@ export class EmployeeRepository extends BaseRepository<IEmployee> {
   public async findByIdWithDetails(id: number): Promise<IEmployee | undefined> {
     return await this.findById(id);
   }
+
+  public async updateEmployee(
+    id: number,
+    updateData: Partial<IEmployee>
+  ): Promise<IEmployee | undefined> {
+    return await this.update(id, updateData);
+  }
 }

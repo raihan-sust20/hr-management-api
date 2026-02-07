@@ -173,4 +173,168 @@ router.post(
   employeeController.create
 );
 
+/**
+ * @swagger
+ * /employees/{id}:
+ *   put:
+ *     summary: Update employee details
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Employee ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 example: Alice Johnson Updated
+ *                 description: Employee full name (optional)
+ *               designation:
+ *                 type: string
+ *                 example: Lead Software Engineer
+ *                 description: Employee job title/designation (optional)
+ *               hiring_date:
+ *                 type: string
+ *                 format: date
+ *                 example: 2023-06-15
+ *                 description: Date of hiring (optional, must be in past, employee must be 18+ at hiring)
+ *               date_of_birth:
+ *                 type: string
+ *                 format: date
+ *                 example: 1995-03-20
+ *                 description: Employee date of birth (optional, age will be auto-recalculated)
+ *               salary:
+ *                 type: number
+ *                 format: decimal
+ *                 example: 105000.00
+ *                 description: Employee salary (optional, must be positive)
+ *               photo:
+ *                 type: string
+ *                 format: binary
+ *                 description: Employee photo (optional, JPEG only, max 5MB, replaces existing photo)
+ *     responses:
+ *       200:
+ *         description: Employee updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Employee updated successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: number
+ *                       example: 1
+ *                     name:
+ *                       type: string
+ *                       example: Alice Johnson Updated
+ *                     age:
+ *                       type: number
+ *                       example: 29
+ *                       description: Auto-calculated from date_of_birth
+ *                     designation:
+ *                       type: string
+ *                       example: Lead Software Engineer
+ *                     hiring_date:
+ *                       type: string
+ *                       format: date
+ *                       example: 2023-06-15
+ *                     date_of_birth:
+ *                       type: string
+ *                       format: date
+ *                       example: 1995-03-20
+ *                     salary:
+ *                       type: number
+ *                       example: 105000.00
+ *                     photo_path:
+ *                       type: string
+ *                       example: employee-1.jpg
+ *                     photoUrl:
+ *                       type: string
+ *                       example: http://localhost:3000/uploads/employee-1.jpg
+ *                     created_at:
+ *                       type: string
+ *                       format: date-time
+ *                     updated_at:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Bad request (invalid data, validation error)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Employee not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Validation failed
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: VALIDATION_ERROR
+ *                     details:
+ *                       type: object
+ *                       properties:
+ *                         errors:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               field:
+ *                                 type: string
+ *                                 example: hiring_date
+ *                               message:
+ *                                 type: string
+ *                                 example: Employee must be at least 18 years old at the time of hiring
+ */
+router.put(
+  '/:id',
+  AuthMiddleware.authenticate(),
+  ValidationMiddleware.validateParams(employeeValidation.employeeId),
+  ValidationMiddleware.validateBody(employeeValidation.updateEmployee),
+  UploadMiddleware.uploadJpegOnly(),
+  employeeController.update
+);
+
 export default router;

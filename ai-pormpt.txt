@@ -1,53 +1,68 @@
-Great! Let me gather the context I need for implementing the POST /employees endpoint:
+1. Update Behavior
 
-## 🤔 Context Needed
+Should all fields be required or can user update only specific fields (partial update)? - only specific fields can be updated
+If partial update, which fields can be optional? - only these fields are allowed to be updated and can be optional: name
+age
+designation
+hiring_date
+date_of_birth
+salary
+photo_path
 
-### 1. **Validation Rules**
-- **Name**: Min/max length? Any special character restrictions? - Min 2 char. No restrictions
-on Max char.
-- **Age**: Should we validate against hiring_date and date_of_birth consistency? - yes
-- **Designation**: Free text or from a predefined list? - free text
-- **Dates**: 
-  - Should hiring_date be in the past only or can it be future? - past only
-  - Should we validate that date_of_birth + age matches approximately? - yes
-  - Should hiring_date be after date_of_birth + 18 years? - yes
-- **Salary**: Min/max range? - no range
-- **Photo**: 
-  - Required or optional? - required
-  - Max file size? (default 5MB in config) - 5MB
-  - Allowed formats? (JPEG, PNG, GIF, WebP?) - JPEG only
 
-### 2. **Business Logic**
-- Should we auto-calculate age from date_of_birth or accept it as input? - auto calculate
-- Any duplicate check? (e.g., same name + date_of_birth?) - no
-- Should photo be automatically renamed/stored with employee ID or random name? - automatically renamed/stored with employee ID
+no other fields are allowed to update.
 
-### 3. **Response Format**
-- Return full employee object including photo_path? - yes
-- Should we return a full URL for photo or just the path? - full url path
+2. Photo Update
 
-### 4. **Module Structure**
-Should I create the complete module structure:
-- `employee.types.ts`
-- `employee.validation.ts`
-- `employee.repository.ts`
-- `employee.service.ts`
-- `employee.controller.ts`
-- `employee.routes.ts`
+Is photo optional in the update request? - yes
+If photo is NOT provided, should we:
 
-Or just the minimum needed for POST endpoint? - complete module structure
+Keep the existing photo?
+Or require photo in every update?
 
-### 5. **Authentication**
-- Should this endpoint require authentication? - yes
-- If yes, any role-based restrictions? (e.g., only HR can create employees?) - no
+- keep the existing photo
 
-### 6. **Testing**
-- Should I create unit and integration tests for this endpoint? - yes
+If new photo is uploaded, should we:
 
-The module name should be employee.
+Delete the old photo file from disk?
+Keep the old photo as backup?
+- delete old photo file from disk
 
-**Please provide your preferences, and I'll implement accordingly!**
 
-Do you need any more context based on the answer?
+3. Date/Age Validation
 
-If no more context is required, share your plan first. I need to review it.
+If date_of_birth is updated, should we:
+
+Recalculate age automatically? - yes
+Validate new DOB against existing hiring_date? - yes
+
+
+If hiring_date is updated, should we validate against existing date_of_birth? - yes
+Can user update both dates in a single request? - yes
+
+4. Business Rules
+
+Can we update an employee that doesn't exist? (404 error?) - no
+Should we validate that the new data still satisfies the 18+ at hiring rule? - yes
+Any fields that should NOT be updatable (e.g., created_at, id)? - yes. Following fields
+are not updatable: id
+created_at
+updated_at
+.
+
+5. Response Format
+
+Return the complete updated employee object with photo URL? - yes
+Same format as POST response? - yes
+
+6. Authentication & Authorization
+
+Requires authentication? (I assume yes) - yes
+Any role-based restrictions? - no
+Can any authenticated user update any employee? - yes
+
+7. Testing
+
+Should I create unit and integration tests?
+
+Please provide your preferences, and I'll create the implementation plan!

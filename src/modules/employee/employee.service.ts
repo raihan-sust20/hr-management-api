@@ -5,6 +5,7 @@ import {
   IEmployeeResponseDto,
   ICreateEmployeeData,
   IEmployee,
+  type IUpdateEmployeeDto,
 } from './employee.type';
 import { AppError } from '../../common/middlewares/error.middleware';
 import { HTTP_STATUS, ERROR_CODES } from '../../common/constants/http-status.constant';
@@ -80,6 +81,90 @@ export class EmployeeService {
     }
   }
 
+  public async updateEmployee(
+    id: number,
+    updateDto: IUpdateEmployeeDto,
+    photoFile?: Express.Multer.File
+  ): Promise<IEmployeeResponseDto> {
+    // Fetch existing employee
+    const existingEmployee = await this.employeeRepository.findByIdWithDetails(id);
+
+    if (!existingEmployee) {
+      throw new AppError('Employee not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+    }
+
+    // Prepare update data
+    const updateData: Partial<IEmployee> = {};
+
+    // Update name if provided
+    if (updateDto.name !== undefined) {
+      updateData.name = updateDto.name;
+    }
+
+    // Update designation if provided
+    if (updateDto.designation !== undefined) {
+      updateData.designation = updateDto.designation;
+    }
+
+    // Update salary if provided
+    if (updateDto.salary !== undefined) {
+      updateData.salary = updateDto.salary;
+    }
+
+    // Handle date_of_birth update
+    let newDateOfBirth: Date | undefined;
+    if (updateDto.date_of_birth !== undefined) {
+      newDateOfBirth = new Date(updateDto.date_of_birth);
+      updateData.date_of_birth = newDateOfBirth;
+      // Recalculate age
+      updateData.age = this.calculateAge(newDateOfBirth);
+    }
+
+    // Handle hiring_date update
+    let newHiringDate: Date | undefined;
+    if (updateDto.hiring_date !== undefined) {
+      newHiringDate = new Date(updateDto.hiring_date);
+      updateData.hiring_date = newHiringDate;
+    }
+
+    // Validate dates if any date is being updated
+    if (newDateOfBirth || newHiringDate) {
+      this.validateUpdateDates(existingEmployee, newDateOfBirth, newHiringDate);
+    }
+
+    try {
+      // Handle photo update if provided
+      if (photoFile) {
+        const newPhotoPath = await this.handlePhotoUpdate(
+          photoFile,
+          id,
+          existingEmployee.photo_path
+        );
+        updateData.photo_path = newPhotoPath;
+      }
+
+      // Update employee record
+      const updatedEmployee = await this.employeeRepository.updateEmployee(id, updateData);
+
+      if (!updatedEmployee) {
+        throw new AppError(
+          'Failed to update employee',
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          ERROR_CODES.INTERNAL_ERROR
+        );
+      }
+
+      // Return response with full photo URL
+      return this.toEmployeeResponse(updatedEmployee);
+    } catch (error) {
+      // Clean up uploaded file if update fails
+      if (photoFile && photoFile.path) {
+        this.deleteFile(photoFile.path);
+      }
+      throw error;
+    }
+  }
+
   private async handlePhotoUpload(file: Express.Multer.File, employeeId: number): Promise<string> {
     const uploadDir = process.env.UPLOAD_PATH || './uploads';
     const newFileName = `employee-${employeeId}.jpg`;
@@ -98,6 +183,45 @@ export class EmployeeService {
     }
   }
 
+  private async handlePhotoUpdate(
+    file: Express.Multer.File,
+    employeeId: number,
+    oldPhotoPath: string | null
+  ): Promise<string> {
+    const uploadDir = './uploads';
+    const newFileName = `employee-${employeeId}.jpg`;
+    const newFilePath = path.join(uploadDir, newFileName);
+
+    try {
+      // Delete old photo if exists
+      if (oldPhotoPath) {
+        const oldFilePath = path.join(uploadDir, oldPhotoPath);
+        this.deletePhotoFile(oldFilePath);
+      }
+
+      // Rename new file to employee-{id}.jpg
+      fs.renameSync(file.path, newFilePath);
+      return newFileName;
+    } catch (error) {
+      throw new AppError(
+        'Failed to update photo',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        ERROR_CODES.FILE_UPLOAD_ERROR
+      );
+    }
+  }
+
+  private deletePhotoFile(filePath: string): void {
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (error) {
+      // Log error but don't throw - file deletion is not critical
+      console.error('Failed to delete photo file:', error);
+    }
+  }
+
   private deleteFile(filePath: string): void {
     try {
       if (fs.existsSync(filePath)) {
@@ -106,6 +230,28 @@ export class EmployeeService {
     } catch (error) {
       // Log error but don't throw - file cleanup is not critical
       console.error('Failed to delete temporary file:', error);
+    }
+  }
+
+  private validateUpdateDates(
+    existingEmployee: IEmployee,
+    newDateOfBirth?: Date,
+    newHiringDate?: Date
+  ): void {
+    // Determine which dates to use for validation
+    const dobToValidate = newDateOfBirth || existingEmployee.date_of_birth;
+    const hiringDateToValidate = newHiringDate || existingEmployee.hiring_date;
+
+    // Calculate minimum hiring date (DOB + 18 years)
+    const minHiringDate = new Date(dobToValidate);
+    minHiringDate.setFullYear(minHiringDate.getFullYear() + 18);
+
+    if (hiringDateToValidate < minHiringDate) {
+      throw new AppError(
+        'Employee must be at least 18 years old at the time of hiring',
+        HTTP_STATUS.BAD_REQUEST,
+        ERROR_CODES.VALIDATION_ERROR
+      );
     }
   }
 
@@ -140,7 +286,7 @@ export class EmployeeService {
 
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
     const host = process.env.HOST || 'localhost';
-    const port = process.env.PORT || 5001;
+    const port = process.env.PORT || 3000;
     const baseUrl = process.env.BASE_URL || `${protocol}://${host}:${port}`;
 
     return `${baseUrl}/uploads/${photoPath}`;

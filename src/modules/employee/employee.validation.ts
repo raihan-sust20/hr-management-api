@@ -64,6 +64,28 @@ const validateDateOfBirth = (value: string, helpers: Joi.CustomHelpers) => {
   return value;
 };
 
+// Custom validation for date consistency in updates
+const validateUpdateDatesConsistency = (value: any, helpers: Joi.CustomHelpers) => {
+  const { date_of_birth, hiring_date } = value;
+
+  // If both dates are provided, validate them together
+  if (date_of_birth && hiring_date) {
+    const dob = new Date(date_of_birth);
+    const hireDate = new Date(hiring_date);
+
+    const minHiringDate = new Date(dob);
+    minHiringDate.setFullYear(minHiringDate.getFullYear() + 18);
+
+    if (hireDate < minHiringDate) {
+      return helpers.error('any.invalid', {
+        message: 'Employee must be at least 18 years old at the time of hiring',
+      });
+    }
+  }
+
+  return value;
+};
+
 export const employeeValidation = {
   createEmployee: Joi.object({
     name: Joi.string().min(2).trim().required().messages({
@@ -100,6 +122,41 @@ export const employeeValidation = {
       'number.base': 'Salary must be a number',
       'number.positive': 'Salary must be a positive number',
       'any.required': 'Salary is required',
+    }),
+  }),
+
+  updateEmployee: Joi.object({
+    name: Joi.string().min(2).trim().optional().messages({
+      'string.min': 'Name must be at least 2 characters long',
+    }),
+
+    designation: Joi.string().trim().optional(),
+
+    date_of_birth: Joi.date().iso().optional().custom(validateDateOfBirth).messages({
+      'date.format': 'Date of birth must be in YYYY-MM-DD format',
+    }),
+
+    hiring_date: Joi.date().iso().optional().custom(validatePastDate).messages({
+      'date.format': 'Hiring date must be in YYYY-MM-DD format',
+    }),
+
+    salary: Joi.number().positive().precision(2).optional().messages({
+      'number.base': 'Salary must be a number',
+      'number.positive': 'Salary must be a positive number',
+    }),
+  })
+    .min(1)
+    .custom(validateUpdateDatesConsistency)
+    .messages({
+      'object.min': 'At least one field must be provided for update',
+      'any.invalid': 'Employee must be at least 18 years old at the time of hiring',
+    }),
+
+  employeeId: Joi.object({
+    id: Joi.number().integer().positive().required().messages({
+      'number.base': 'Employee ID must be a number',
+      'number.positive': 'Employee ID must be positive',
+      'any.required': 'Employee ID is required',
     }),
   }),
 };
