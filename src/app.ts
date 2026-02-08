@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import express, { Application, Request, Response } from 'express';
 import morgan from 'morgan';
 import helmet from 'helmet';
-import { env } from 'process';
+import { env, report } from 'process';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import { container } from 'tsyringe';
@@ -15,6 +15,7 @@ import { ResponseUtil } from './common/utils/response.util';
 import authRoutes from './modules/auth/auth.route';
 import employeeRoutes from './modules/employee/employee.route';
 import attendanceRoutes from './modules/attendance/attendance.route';
+import reportsRoutes from './modules/reports/reports.route';
 
 // Register dependencies
 container.register(DatabaseConfig, { useClass: DatabaseConfig });
@@ -100,6 +101,7 @@ class App {
     this.app.use(`${apiPrefix}/auth`, authRoutes);
     this.app.use(`${apiPrefix}/employees`, employeeRoutes);
     this.app.use(`${apiPrefix}/attendance`, attendanceRoutes);
+    this.app.use(`${apiPrefix}/reports`, reportsRoutes);
   }
 
   private initializeErrorHandling(): void {
