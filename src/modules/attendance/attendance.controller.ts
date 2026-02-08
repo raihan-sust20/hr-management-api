@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { injectable, inject } from 'tsyringe';
 import { AttendanceService } from './attendance.service';
 import { ResponseUtil } from '../../common/utils/response.util';
-import { ICreateAttendanceDto, IListAttendanceQuery } from './attendance.type';
+import { ICreateAttendanceDto, IListAttendanceQuery, type IUpdateAttendanceDto } from './attendance.type';
 import { HTTP_STATUS } from '../../common/constants/http-status.constant';
 
 @injectable()

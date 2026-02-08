@@ -66,6 +66,10 @@ hr-api/
    ```bash
    npm run migrate:latest
    ```
+6. Seed database with sample data:
+   ```bash
+   npm run seed:run
+   ```
 
 ### Running the Application
 
@@ -80,23 +84,11 @@ npm run build
 npm start
 ```
 
-#### Using Docker
-```bash
-docker-compose up -d
-```
-
-## Available Scripts
+## Necessary Scripts
 
 - `npm run dev` - Start development server with auto-reload
 - `npm run build` - Build TypeScript to JavaScript
 - `npm start` - Start production server
-- `npm test` - Run tests
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Generate test coverage report
-- `npm run lint` - Lint code
-- `npm run lint:fix` - Fix linting errors
-- `npm run format` - Format code with Prettier
-- `npm run migrate:make` - Create new migration
 - `npm run migrate:latest` - Run migrations
 - `npm run migrate:rollback` - Rollback last migration
 - `npm run seed:make` - Create new seed
@@ -106,7 +98,7 @@ docker-compose up -d
 
 Once the server is running, access the Swagger documentation at:
 ```
-http://localhost:3000/api-docs
+http://localhost:5001/api-docs
 ```
 
 ## API Endpoints
@@ -135,14 +127,3 @@ This project follows a modular architecture with clear separation of concerns:
 3. **Repository**: Handles data access
 4. **Middleware**: Request/response processing
 5. **Validation**: Input validation with Joi
-
-## Testing
-
-Run tests with:
-```bash
-npm test
-```
-
-## License
-
-MIT
