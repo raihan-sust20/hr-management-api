@@ -23,7 +23,6 @@ export const attendanceValidation = {
       'any.required': 'Check-in time is required',
     }),
   }),
-
   listAttendance: Joi.object({
     employee_id: Joi.number().integer().positive().optional().messages({
       'number.base': 'Employee ID must be a number',
@@ -107,4 +106,22 @@ export const attendanceValidation = {
       'date_range.exceed': 'Date range cannot exceed 90 days',
       'date_range.invalid': 'start_date must be before or equal to end_date',
     }),
+
+  updateAttendance: Joi.object({
+    check_in_time: Joi.date().iso().max('now').required().messages({
+      'date.base': 'Check-in time must be a valid timestamp',
+      'date.format': 'Check-in time must be in ISO 8601 format',
+      'date.max': 'Check-in time cannot be in the future',
+      'any.required': 'Check-in time is required',
+    }),
+  }),
+
+  attendanceId: Joi.object({
+    id: Joi.number().integer().positive().required().messages({
+      'number.base': 'Attendance ID must be a number',
+      'number.integer': 'Attendance ID must be an integer',
+      'number.positive': 'Attendance ID must be positive',
+      'any.required': 'Attendance ID is required',
+    }),
+  }),
 };

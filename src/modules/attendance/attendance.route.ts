@@ -423,4 +423,217 @@ router.get(
   attendanceController.list
 );
 
+/**
+ * @swagger
+ * /attendance/{id}:
+ *   put:
+ *     summary: Update attendance check-in time
+ *     description: |
+ *       Updates the check-in time for an existing attendance record.
+ *       Only the check-in time can be updated; employee_id and date cannot be changed.
+ *       
+ *       **Business Rules:**
+ *       - Only check_in_time can be updated (employee_id and date are immutable)
+ *       - Attendance record must exist
+ *       - Employee must still exist (not deleted)
+ *       - Check-in time cannot be in the future
+ *       - Check-in time must be within business hours (6:00 AM - 10:00 PM UTC)(configurable via environment variables)
+ *       - Check-in time must be on the same date as the attendance record's date
+ *       - Cannot update attendance older than 30 days (configurable via environment variables)
+ *       
+ *       **Use Case:**
+ *       This endpoint is used for correcting mistakes in check-in times for existing attendance records.
+ *       To change the employee or date, delete the record and create a new one using POST.
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Attendance record ID
+ *         example: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - check_in_time
+ *             properties:
+ *               check_in_time:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2026-02-08T10:30:00.000Z"
+ *                 description: |
+ *                   New check-in timestamp in ISO 8601 format (UTC timezone).
+ *                   Must be within business hours (6 AM - 10 PM UTC) and on the same date as the attendance record.
+ *           examples:
+ *             correctCheckIn:
+ *               summary: Correct check-in time
+ *               value:
+ *                 check_in_time: "2026-02-08T10:30:00.000Z"
+ *     responses:
+ *       200:
+ *         description: Attendance updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Attendance updated successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     employee_id:
+ *                       type: integer
+ *                       example: 1
+ *                     date:
+ *                       type: string
+ *                       format: date
+ *                       example: "2026-02-08"
+ *                     check_in_time:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2026-02-08T10:30:00.000Z"
+ *       400:
+ *         description: Bad request - Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: VALIDATION_ERROR
+ *             examples:
+ *               futureCheckIn:
+ *                 summary: Check-in time in future
+ *                 value:
+ *                   success: false
+ *                   message: "Check-in time cannot be in the future"
+ *                   error:
+ *                     code: VALIDATION_ERROR
+ *               outsideBusinessHours:
+ *                 summary: Outside business hours
+ *                 value:
+ *                   success: false
+ *                   message: "Check-in time must be within business hours (6:00 - 22:00 UTC)"
+ *                   error:
+ *                     code: VALIDATION_ERROR
+ *               dateMismatch:
+ *                 summary: Check-in date doesn't match attendance date
+ *                 value:
+ *                   success: false
+ *                   message: "Check-in time must be on the same date as the attendance date"
+ *                   error:
+ *                     code: VALIDATION_ERROR
+ *               tooOld:
+ *                 summary: Attendance too old to edit
+ *                 value:
+ *                   success: false
+ *                   message: "Cannot update attendance older than 30 days"
+ *                   error:
+ *                     code: VALIDATION_ERROR
+ *       401:
+ *         description: Unauthorized - Missing or invalid authentication token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Not found - Attendance record or employee not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: NOT_FOUND
+ *             examples:
+ *               attendanceNotFound:
+ *                 summary: Attendance record not found
+ *                 value:
+ *                   success: false
+ *                   message: "Attendance record not found"
+ *                   error:
+ *                     code: NOT_FOUND
+ *               employeeDeleted:
+ *                 summary: Employee has been deleted
+ *                 value:
+ *                   success: false
+ *                   message: "Cannot update attendance: Employee not found"
+ *                   error:
+ *                     code: NOT_FOUND
+ *       422:
+ *         description: Validation error - Invalid input format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Validation failed
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: VALIDATION_ERROR
+ *                     details:
+ *                       type: object
+ *                       properties:
+ *                         errors:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               field:
+ *                                 type: string
+ *                                 example: check_in_time
+ *                               message:
+ *                                 type: string
+ *                                 example: Check-in time must be in ISO 8601 format
+ */
+router.put(
+  '/:id',
+  AuthMiddleware.authenticate(),
+  ValidationMiddleware.validateParams(attendanceValidation.attendanceId),
+  ValidationMiddleware.validateBody(attendanceValidation.updateAttendance),
+  attendanceController.update
+);
+
 export default router;

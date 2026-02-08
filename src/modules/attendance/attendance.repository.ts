@@ -65,6 +65,23 @@ export class AttendanceRepository extends BaseRepository<IAttendance> {
   }
 
   /**
+   * Update check-in time by attendance ID
+   */
+  public async updateCheckInTimeById(
+    id: number,
+    checkInTime: Date
+  ): Promise<IAttendance | undefined> {
+    const [result] = await this.table
+      .where({ id })
+      .update({
+        check_in_time: checkInTime,
+      })
+      .returning('*');
+
+    return result as IAttendance | undefined;
+  }
+
+  /**
    * Find all attendance records with filters and pagination
    */
   public async findAllWithFilters(
@@ -77,8 +94,11 @@ export class AttendanceRepository extends BaseRepository<IAttendance> {
     const sortOrder = query.sortOrder || 'desc';
 
     // Base query with INNER JOIN to exclude deleted employees
-    let baseQuery = this.db('attendance')
-      .innerJoin('employees', 'attendance.employee_id', 'employees.id');
+    let baseQuery = this.db('attendance').innerJoin(
+      'employees',
+      'attendance.employee_id',
+      'employees.id'
+    );
 
     // Apply filters
     if (query.employee_id) {
@@ -97,9 +117,7 @@ export class AttendanceRepository extends BaseRepository<IAttendance> {
     }
 
     // Get total count
-    const totalResult = await baseQuery
-      .clone()
-      .count<{ count: string }>('attendance.id as count');
+    const totalResult = await baseQuery.clone().count<{ count: string }>('attendance.id as count');
     const total = parseToInt(totalResult[0].count);
 
     // Get paginated data

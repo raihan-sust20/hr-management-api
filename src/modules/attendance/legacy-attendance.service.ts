@@ -8,10 +8,10 @@ import {
   IListAttendanceQuery,
   IPaginatedAttendanceResponse,
   IAttendanceListItemDto,
-  IUpdateAttendanceDto,
 } from './attendance.type';
 import { AppError } from '../../common/middlewares/error.middleware';
 import { HTTP_STATUS, ERROR_CODES } from '../../common/constants/http-status.constant';
+import { parseToInt } from '../../common/utils/general.util';
 
 @injectable()
 export class AttendanceService {
@@ -19,7 +19,6 @@ export class AttendanceService {
   private readonly businessHoursEnd: number;
   private readonly retroactiveLimitDays: number;
   private readonly maxQueryMonths: number = 3;
-  private readonly updateLimitDays: number;
 
   constructor(
     @inject(AttendanceRepository) private attendanceRepository: AttendanceRepository,
@@ -29,7 +28,6 @@ export class AttendanceService {
     this.businessHoursStart = parseInt(process.env.BUSINESS_HOURS_START || '6', 10);
     this.businessHoursEnd = parseInt(process.env.BUSINESS_HOURS_END || '22', 10);
     this.retroactiveLimitDays = parseInt(process.env.RETROACTIVE_LIMIT_DAYS || '7', 10);
-    this.updateLimitDays = parseInt(process.env.ATTENDANCE_UPDATE_LIMIT_DAYS || '30', 10);
   }
 
   public async createOrUpdateAttendance(
@@ -95,8 +93,8 @@ export class AttendanceService {
   }
 
   public async listAttendance(query: IListAttendanceQuery): Promise<IPaginatedAttendanceResponse> {
-    const page = Number(query.page) || 1;
-    const limit = Math.min(Number(query.limit) || 20, 100);
+    const page = parseToInt(query.page) || 1;
+    const limit = Math.min(parseToInt(query.limit) || 20, 100);
 
     // Validate 3-month backward limit
     this.validateQueryDateRange(query);
@@ -118,79 +116,6 @@ export class AttendanceService {
         totalPages,
       },
     };
-  }
-
-  public async updateAttendance(
-    id: number,
-    updateDto: IUpdateAttendanceDto
-  ): Promise<IAttendanceResponseDto> {
-    // 1. Find attendance record by ID
-    const existingAttendance = await this.attendanceRepository.findById(id);
-
-    if (!existingAttendance) {
-      throw new AppError(
-        'Attendance record not found',
-        HTTP_STATUS.NOT_FOUND,
-        ERROR_CODES.NOT_FOUND
-      );
-    }
-
-    // 2. Verify employee still exists (not deleted)
-    const employee = await this.employeeRepository.findById(existingAttendance.employee_id);
-
-    if (!employee) {
-      throw new AppError(
-        'Cannot update attendance: Employee not found',
-        HTTP_STATUS.NOT_FOUND,
-        ERROR_CODES.NOT_FOUND
-      );
-    }
-
-    // 3. Check if attendance record is too old to edit
-    this.validateAttendanceAge(existingAttendance.date);
-
-    // 4. Parse new check-in time
-    const newCheckInTime = new Date(updateDto.check_in_time);
-
-    // 5. Validate check-in time is not in future
-    this.validateDateNotInFuture(newCheckInTime, 'Check-in time');
-
-    // 6. Validate business hours
-    this.validateBusinessHours(newCheckInTime);
-
-    // 7. Validate check-in time is on same date as attendance record's date
-    this.validateCheckInDateMatch(existingAttendance.date, newCheckInTime);
-
-    // 8. Update in database
-    const updatedAttendance = await this.attendanceRepository.updateCheckInTimeById(
-      id,
-      newCheckInTime
-    );
-
-    if (!updatedAttendance) {
-      throw new AppError(
-        'Failed to update attendance',
-        HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        ERROR_CODES.INTERNAL_ERROR
-      );
-    }
-
-    // 9. Return response
-    return this.toAttendanceResponse(updatedAttendance);
-  }
-
-  private validateAttendanceAge(attendanceDate: Date): void {
-    const now = new Date();
-    const diffTime = now.getTime() - attendanceDate.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays > this.updateLimitDays) {
-      throw new AppError(
-        `Cannot update attendance older than ${this.updateLimitDays} days`,
-        HTTP_STATUS.BAD_REQUEST,
-        ERROR_CODES.VALIDATION_ERROR
-      );
-    }
   }
 
   private validateQueryDateRange(query: IListAttendanceQuery): void {

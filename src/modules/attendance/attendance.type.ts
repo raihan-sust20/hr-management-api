@@ -51,3 +51,8 @@ export interface IPaginatedAttendanceResponse {
     totalPages: number;
   };
 }
+
+// Request DTO for updating attendance (only check_in_time)
+export interface IUpdateAttendanceDto {
+  check_in_time: string; // ISO 8601 timestamp
+}

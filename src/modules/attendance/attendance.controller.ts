@@ -47,4 +47,17 @@ export class AttendanceController {
       next(error);
     }
   };
+
+  public update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = Number(req.params.id);
+      const updateDto: IUpdateAttendanceDto = req.body;
+
+      const attendance = await this.attendanceService.updateAttendance(id, updateDto);
+
+      ResponseUtil.success(res, 'Attendance updated successfully', attendance, HTTP_STATUS.OK);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
