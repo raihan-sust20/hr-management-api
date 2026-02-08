@@ -85,6 +85,16 @@ export class EmployeeService {
     }
   }
 
+  public async getEmployeeById(id: number): Promise<IEmployeeResponseDto> {
+    const employee = await this.employeeRepository.findByIdWithDetails(id);
+
+    if (!employee) {
+      throw new AppError('Employee not found', HTTP_STATUS.NOT_FOUND, ERROR_CODES.NOT_FOUND);
+    }
+
+    return this.toEmployeeResponse(employee);
+  }
+
   public async updateEmployee(
     id: number,
     updateDto: IUpdateEmployeeDto,

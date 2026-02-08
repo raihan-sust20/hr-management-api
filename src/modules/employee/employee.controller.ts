@@ -3,7 +3,11 @@ import { injectable, inject } from 'tsyringe';
 import { EmployeeService } from './employee.service';
 import { IAuthRequest } from '../../common/types/express.type';
 import { ResponseUtil } from '../../common/utils/response.util';
-import { ICreateEmployeeDto, type IListEmployeesQuery, type IUpdateEmployeeDto } from './employee.type';
+import {
+  ICreateEmployeeDto,
+  type IListEmployeesQuery,
+  type IUpdateEmployeeDto,
+} from './employee.type';
 import { AppError } from '../../common/middlewares/error.middleware';
 import { HTTP_STATUS, ERROR_CODES } from '../../common/constants/http-status.constant';
 
@@ -53,6 +57,22 @@ export class EmployeeController {
         result.data,
         result.meta
       );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getById = async (
+    req: IAuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> => {
+    try {
+      const { id } = req.params;
+
+      const employee = await this.employeeService.getEmployeeById(parseInt(id as string, 10));
+
+      return ResponseUtil.success(res, 'Employee retrieved successfully', employee);
     } catch (error) {
       next(error);
     }

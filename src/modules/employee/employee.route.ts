@@ -303,6 +303,110 @@ router.get(
 /**
  * @swagger
  * /employees/{id}:
+ *   get:
+ *     summary: Get a single employee by ID
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Employee ID
+ *     responses:
+ *       200:
+ *         description: Employee retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Employee retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: number
+ *                       example: 1
+ *                     name:
+ *                       type: string
+ *                       example: John Doe
+ *                     age:
+ *                       type: number
+ *                       example: 29
+ *                       description: Auto-calculated from date_of_birth
+ *                     designation:
+ *                       type: string
+ *                       example: Software Engineer
+ *                     hiring_date:
+ *                       type: string
+ *                       format: date
+ *                       example: 2023-06-15
+ *                     date_of_birth:
+ *                       type: string
+ *                       format: date
+ *                       example: 1995-03-20
+ *                     salary:
+ *                       type: number
+ *                       example: 75000.00
+ *                     photo_path:
+ *                       type: string
+ *                       example: employee-1.jpg
+ *                     created_at:
+ *                       type: string
+ *                       format: date-time
+ *                     updated_at:
+ *                       type: string
+ *                       format: date-time
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Employee not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Employee not found
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: NOT_FOUND
+ *       422:
+ *         description: Validation error (invalid ID format)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get(
+  '/:id',
+  AuthMiddleware.authenticate(),
+  ValidationMiddleware.validateParams(employeeValidation.employeeId),
+  employeeController.getById
+);
+
+/**
+ * @swagger
+ * /employees/{id}:
  *   put:
  *     summary: Update employee details
  *     tags: [Employees]
