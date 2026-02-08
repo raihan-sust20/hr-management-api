@@ -1,6 +1,7 @@
 import { injectable } from 'tsyringe';
 import { BaseRepository } from '../../common/utils/base.repository';
-import { IEmployee, ICreateEmployeeData } from './employee.type';
+import { IEmployee, ICreateEmployeeData, IListEmployeesQuery } from './employee.type';
+import { log } from 'node:console';
 
 @injectable()
 export class EmployeeRepository extends BaseRepository<IEmployee> {
@@ -25,5 +26,38 @@ export class EmployeeRepository extends BaseRepository<IEmployee> {
     updateData: Partial<IEmployee>
   ): Promise<IEmployee | undefined> {
     return await this.update(id, updateData);
+  }
+
+  public async findAllWithFilters(
+    query: IListEmployeesQuery
+  ): Promise<{ data: IEmployee[]; total: number }> {
+    const page = query.page || 1;
+    const limit = Math.min(query.limit || 20, 100);
+    const offset = (page - 1) * limit;
+    const sortBy = query.sortBy || 'created_at';
+    const sortOrder = query.sortOrder || 'desc';
+
+    // Base query (no mutation yet)
+    const baseQuery = this.table;
+
+    // Apply filters ONCE
+    if (query.name && query.name.trim()) {
+      baseQuery.where('name', 'ilike', `%${query.name.trim()}%`);
+    }
+
+    // Count query (clone BEFORE pagination)
+    const totalResult = await baseQuery.clone().count<{ count: string }>('id as count');
+    console.log('Total count query result:', totalResult);
+    const total = Number(totalResult[0].count);
+    
+    // Data query
+    const data = await baseQuery
+      .clone()
+      .select('*')
+      .orderBy(sortBy, sortOrder)
+      .limit(limit)
+      .offset(offset);
+
+    return { data: data as IEmployee[], total };
   }
 }

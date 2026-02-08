@@ -6,6 +6,9 @@ import {
   ICreateEmployeeData,
   IEmployee,
   type IUpdateEmployeeDto,
+  type IEmployeeListItemDto,
+  type IListEmployeesQuery,
+  type IPaginatedEmployeesResponse,
 } from './employee.type';
 import { AppError } from '../../common/middlewares/error.middleware';
 import { HTTP_STATUS, ERROR_CODES } from '../../common/constants/http-status.constant';
@@ -302,7 +305,44 @@ export class EmployeeService {
       date_of_birth: employee.date_of_birth.toISOString().split('T')[0],
       salary: employee.salary,
       photo_path: employee.photo_path,
-      photoUrl: this.generatePhotoUrl(employee.photo_path),
+      // photoUrl: this.generatePhotoUrl(employee.photo_path),
+      created_at: employee.created_at,
+      updated_at: employee.updated_at,
+    };
+  }
+
+  public async listEmployees(query: IListEmployeesQuery): Promise<IPaginatedEmployeesResponse> {
+    const page = Number(query.page) || 1;
+    const limit = Math.min(Number(query.limit) || 20, 100);
+    console.log('Listing employees with query:', { ...query, page, limit });
+
+    const { data, total } = await this.employeeRepository.findAllWithFilters(query);
+
+    const totalPages = Math.ceil(total / limit);
+
+    // Convert to minimal list response (no photo URLs)
+    const employees = data.map((emp) => this.toEmployeeListItem(emp));
+
+    return {
+      data: employees,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
+  }
+
+  private toEmployeeListItem(employee: IEmployee): IEmployeeListItemDto {
+    return {
+      id: employee.id,
+      name: employee.name,
+      age: employee.age,
+      designation: employee.designation,
+      hiring_date: employee.hiring_date.toISOString().split('T')[0],
+      date_of_birth: employee.date_of_birth.toISOString().split('T')[0],
+      salary: employee.salary,
       created_at: employee.created_at,
       updated_at: employee.updated_at,
     };

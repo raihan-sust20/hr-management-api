@@ -34,7 +34,6 @@ CREATE TABLE employees (
 );
 
 CREATE INDEX idx_employees_name ON employees(name);
-CREATE INDEX idx_employees_hiring_date ON employees(hiring_date);
 
 CREATE TRIGGER update_employees_updated_at
   BEFORE UPDATE ON employees

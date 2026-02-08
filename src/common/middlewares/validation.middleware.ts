@@ -9,6 +9,7 @@ export interface IValidationOptions {
   abortEarly?: boolean;
   stripUnknown?: boolean;
   allowUnknown?: boolean;
+  convert?: boolean;
 }
 
 export class ValidationMiddleware {
@@ -22,9 +23,12 @@ export class ValidationMiddleware {
         abortEarly: options.abortEarly ?? false,
         stripUnknown: options.stripUnknown ?? true,
         allowUnknown: options.allowUnknown ?? false,
+        convert: true,
       };
 
-      const { error, value } = schema.validate(req[source], validationOptions);
+      const input = { ...req[source] }; // ✅ universal fix
+
+      const { error, value } = schema.validate(input, validationOptions);
 
       if (error) {
         const errors = error.details.map((detail) => ({
@@ -32,17 +36,18 @@ export class ValidationMiddleware {
           message: detail.message,
         }));
 
-        throw new AppError(
-          'Validation failed',
-          HTTP_STATUS.UNPROCESSABLE_ENTITY,
-          ERROR_CODES.VALIDATION_ERROR,
-          true,
-          { errors }
+        return next(
+          new AppError(
+            'Validation failed',
+            HTTP_STATUS.UNPROCESSABLE_ENTITY,
+            ERROR_CODES.VALIDATION_ERROR,
+            true,
+            { errors }
+          )
         );
       }
 
-      // Replace request data with validated data
-      req[source] = value;
+      Object.assign(req[source], value); // ✅ safe write-back
       next();
     };
   }
@@ -74,6 +79,6 @@ export const commonSchemas = {
   }),
 
   email: Joi.string().email().lowercase().trim(),
-  
+
   password: Joi.string().min(8).max(128),
 };

@@ -168,9 +168,136 @@ const employeeController = container.resolve(EmployeeController);
 router.post(
   '/',
   AuthMiddleware.authenticate(),
-  ValidationMiddleware.validateBody(employeeValidation.createEmployee),
   UploadMiddleware.uploadJpegOnly(),
+  ValidationMiddleware.validateBody(employeeValidation.createEmployee),
   employeeController.create
+);
+
+/**
+ * @swagger
+ * /employees:
+ *   get:
+ *     summary: List all employees with pagination and filters
+ *     tags: [Employees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Number of items per page (max 100)
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         description: Search employees by name (case-insensitive partial match)
+ *         example: john
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [name, age, designation, hiring_date, date_of_birth, salary, created_at]
+ *           default: created_at
+ *         description: Field to sort by
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Sort order
+ *     responses:
+ *       200:
+ *         description: Employees retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Employees retrieved successfully
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: number
+ *                         example: 1
+ *                       name:
+ *                         type: string
+ *                         example: Alice Johnson
+ *                       age:
+ *                         type: number
+ *                         example: 32
+ *                       designation:
+ *                         type: string
+ *                         example: Senior Software Engineer
+ *                       hiring_date:
+ *                         type: string
+ *                         format: date
+ *                         example: 2021-03-15
+ *                       date_of_birth:
+ *                         type: string
+ *                         format: date
+ *                         example: 1992-05-20
+ *                       salary:
+ *                         type: number
+ *                         example: 95000.00
+ *                       created_at:
+ *                         type: string
+ *                         format: date-time
+ *                       updated_at:
+ *                         type: string
+ *                         format: date-time
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: number
+ *                       example: 1
+ *                     limit:
+ *                       type: number
+ *                       example: 20
+ *                     total:
+ *                       type: number
+ *                       example: 50
+ *                     totalPages:
+ *                       type: number
+ *                       example: 3
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get(
+  '/',
+  AuthMiddleware.authenticate(),
+  ValidationMiddleware.validateQuery(employeeValidation.listEmployees),
+  employeeController.list
 );
 
 /**
@@ -331,9 +458,9 @@ router.post(
 router.put(
   '/:id',
   AuthMiddleware.authenticate(),
+  UploadMiddleware.uploadJpegOnly(),
   ValidationMiddleware.validateParams(employeeValidation.employeeId),
   ValidationMiddleware.validateBody(employeeValidation.updateEmployee),
-  UploadMiddleware.uploadJpegOnly(),
   employeeController.update
 );
 

@@ -10,6 +10,7 @@ const mockEmployeeRepository = {
   updatePhotoPath: jest.fn(),
   findByIdWithDetails: jest.fn(),
   updateEmployee: jest.fn(),
+  findAllWithFilters: jest.fn(),
 } as unknown as jest.Mocked<EmployeeRepository>;
 
 // Mock fs module
@@ -324,6 +325,132 @@ describe('EmployeeService', () => {
       expect(result).toHaveProperty('name', 'Complete Update');
       expect(result).toHaveProperty('designation', 'Senior Engineer');
       expect(result).toHaveProperty('salary', 95000);
+    });
+  });
+
+  describe('listEmployees', () => {
+    const mockEmployees = [
+      {
+        id: 1,
+        name: 'Alice Johnson',
+        age: 32,
+        designation: 'Senior Software Engineer',
+        hiring_date: new Date('2021-03-15'),
+        date_of_birth: new Date('1992-05-20'),
+        salary: 95000,
+        photo_path: 'employee-1.jpg',
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      {
+        id: 2,
+        name: 'Bob Smith',
+        age: 28,
+        designation: 'Software Engineer',
+        hiring_date: new Date('2023-01-10'),
+        date_of_birth: new Date('1996-03-15'),
+        salary: 75000,
+        photo_path: 'employee-2.jpg',
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+    ];
+
+    it('should list employees with default pagination', async () => {
+      mockEmployeeRepository.findAllWithFilters.mockResolvedValue({
+        data: mockEmployees,
+        total: 2,
+      });
+
+      const result = await employeeService.listEmployees({});
+
+      expect(result.data).toHaveLength(2);
+      expect(result.meta).toEqual({
+        page: 1,
+        limit: 20,
+        total: 2,
+        totalPages: 1,
+      });
+      expect(result.data[0]).not.toHaveProperty('photo_path');
+      expect(result.data[0]).not.toHaveProperty('photoUrl');
+      expect(mockEmployeeRepository.findAllWithFilters).toHaveBeenCalledWith({});
+    });
+
+    it('should list employees with custom pagination', async () => {
+      mockEmployeeRepository.findAllWithFilters.mockResolvedValue({
+        data: [mockEmployees[0]],
+        total: 50,
+      });
+
+      const result = await employeeService.listEmployees({ page: 2, limit: 10 });
+
+      expect(result.meta).toEqual({
+        page: 2,
+        limit: 10,
+        total: 50,
+        totalPages: 5,
+      });
+    });
+
+    it('should enforce max limit of 100', async () => {
+      mockEmployeeRepository.findAllWithFilters.mockResolvedValue({
+        data: mockEmployees,
+        total: 200,
+      });
+
+      const result = await employeeService.listEmployees({ limit: 200 });
+
+      expect(result.meta.limit).toBe(100);
+      expect(result.meta.totalPages).toBe(2);
+    });
+
+    it('should filter by name', async () => {
+      mockEmployeeRepository.findAllWithFilters.mockResolvedValue({
+        data: [mockEmployees[0]],
+        total: 1,
+      });
+
+      const result = await employeeService.listEmployees({ name: 'alice' });
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].name).toBe('Alice Johnson');
+      expect(mockEmployeeRepository.findAllWithFilters).toHaveBeenCalledWith({ name: 'alice' });
+    });
+
+    it('should return empty array when no results', async () => {
+      mockEmployeeRepository.findAllWithFilters.mockResolvedValue({
+        data: [],
+        total: 0,
+      });
+
+      const result = await employeeService.listEmployees({ name: 'nonexistent' });
+
+      expect(result.data).toEqual([]);
+      expect(result.meta).toEqual({
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0,
+      });
+    });
+
+    it('should not include photo_path or photoUrl in list response', async () => {
+      mockEmployeeRepository.findAllWithFilters.mockResolvedValue({
+        data: mockEmployees,
+        total: 2,
+      });
+
+      const result = await employeeService.listEmployees({});
+
+      result.data.forEach((employee) => {
+        expect(employee).not.toHaveProperty('photo_path');
+        expect(employee).not.toHaveProperty('photoUrl');
+        expect(employee).toHaveProperty('id');
+        expect(employee).toHaveProperty('name');
+        expect(employee).toHaveProperty('age');
+        expect(employee).toHaveProperty('designation');
+        expect(employee).toHaveProperty('salary');
+      });
     });
   });
 });

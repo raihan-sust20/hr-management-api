@@ -15,7 +15,7 @@ const calculateAge = (dateOfBirth: Date): number => {
 };
 
 // Custom validation for hiring eligibility
-const validateHiringEligibility = (value: string, helpers: Joi.CustomHelpers) => {
+const validateHiringEligibility = (value: Date, helpers: Joi.CustomHelpers) => {
   const dateOfBirth = helpers.state.ancestors[0].date_of_birth;
 
   if (!dateOfBirth) {
@@ -37,7 +37,7 @@ const validateHiringEligibility = (value: string, helpers: Joi.CustomHelpers) =>
 };
 
 // Custom validation to ensure hiring_date is in the past
-const validatePastDate = (value: string, helpers: Joi.CustomHelpers) => {
+const validatePastDate = (value: Date, helpers: Joi.CustomHelpers) => {
   const inputDate = new Date(value);
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Reset time to compare only dates
@@ -50,7 +50,7 @@ const validatePastDate = (value: string, helpers: Joi.CustomHelpers) => {
 };
 
 // Custom validation for date of birth (must result in age 18-70)
-const validateDateOfBirth = (value: string, helpers: Joi.CustomHelpers) => {
+const validateDateOfBirth = (value: Date, helpers: Joi.CustomHelpers) => {
   const age = calculateAge(new Date(value));
 
   if (age < 18) {
@@ -77,9 +77,7 @@ const validateUpdateDatesConsistency = (value: any, helpers: Joi.CustomHelpers) 
     minHiringDate.setFullYear(minHiringDate.getFullYear() + 18);
 
     if (hireDate < minHiringDate) {
-      return helpers.error('any.invalid', {
-        message: 'Employee must be at least 18 years old at the time of hiring',
-      });
+      return helpers.error('any.invalid');
     }
   }
 
@@ -133,11 +131,15 @@ export const employeeValidation = {
     designation: Joi.string().trim().optional(),
 
     date_of_birth: Joi.date().iso().optional().custom(validateDateOfBirth).messages({
+      'any.required': 'Date of birth is required',
       'date.format': 'Date of birth must be in YYYY-MM-DD format',
+      'age.less': 'Employee must be at least 18 years old',
+      'age.more': 'Employee must be 70 years old or younger',
     }),
 
     hiring_date: Joi.date().iso().optional().custom(validatePastDate).messages({
       'date.format': 'Hiring date must be in YYYY-MM-DD format',
+      'date.future': 'Hiring date must be in the past or today',
     }),
 
     salary: Joi.number().positive().precision(2).optional().messages({
@@ -157,6 +159,35 @@ export const employeeValidation = {
       'number.base': 'Employee ID must be a number',
       'number.positive': 'Employee ID must be positive',
       'any.required': 'Employee ID is required',
+    }),
+  }),
+
+  listEmployees: Joi.object({
+    page: Joi.number().integer().min(1).default(1).messages({
+      'number.base': 'Page must be a number',
+      'number.min': 'Page must be at least 1',
+    }),
+
+    limit: Joi.number().integer().min(1).max(100).default(20).messages({
+      'number.base': 'Limit must be a number',
+      'number.min': 'Limit must be at least 1',
+      'number.max': 'Limit cannot exceed 100',
+    }),
+
+    name: Joi.string().trim().optional().allow('').messages({
+      'string.base': 'Name must be a string',
+    }),
+
+    sortBy: Joi.string()
+      .valid('name', 'age', 'designation', 'hiring_date', 'date_of_birth', 'salary', 'created_at')
+      .default('created_at')
+      .messages({
+        'any.only':
+          'sortBy must be one of: name, age, designation, hiring_date, date_of_birth, salary, created_at',
+      }),
+
+    sortOrder: Joi.string().valid('asc', 'desc').default('desc').messages({
+      'any.only': 'sortOrder must be either asc or desc',
     }),
   }),
 };
