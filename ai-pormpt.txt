@@ -124,9 +124,8 @@ GET /attendance?employee_id=1&start_date=2026-02-01&end_date=2026-02-08
 
 # With sorting
 GET /attendance?employee_id=1&sortBy=date&sortOrder=desc
+
+--- ALl of the above quries will be supported.
 9. Swagger Documentation
 
 Should I include comprehensive Swagger docs similar to employee endpoints? - yes
-
-
-Please provide answers to these questions so I can implement the endpoint exactly as you need it!

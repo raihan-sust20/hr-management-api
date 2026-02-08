@@ -2,6 +2,7 @@ import { injectable } from 'tsyringe';
 import { BaseRepository } from '../../common/utils/base.repository';
 import { IEmployee, ICreateEmployeeData, IListEmployeesQuery } from './employee.type';
 import { log } from 'node:console';
+import { parseToInt } from '../../common/utils/general.util';
 
 @injectable()
 export class EmployeeRepository extends BaseRepository<IEmployee> {
@@ -47,8 +48,7 @@ export class EmployeeRepository extends BaseRepository<IEmployee> {
 
     // Count query (clone BEFORE pagination)
     const totalResult = await baseQuery.clone().count<{ count: string }>('id as count');
-    console.log('Total count query result:', totalResult);
-    const total = Number(totalResult[0].count);
+    const total = parseToInt(totalResult[0].count);
     
     // Data query
     const data = await baseQuery

@@ -1,6 +1,7 @@
 import { injectable } from 'tsyringe';
 import { BaseRepository } from '../../common/utils/base.repository';
 import { IAttendance, IListAttendanceQuery } from './attendance.type';
+import { parseToInt } from '../../common/utils/general.util';
 
 @injectable()
 export class AttendanceRepository extends BaseRepository<IAttendance> {
@@ -99,7 +100,7 @@ export class AttendanceRepository extends BaseRepository<IAttendance> {
     const totalResult = await baseQuery
       .clone()
       .count<{ count: string }>('attendance.id as count');
-    const total = Number(totalResult[0].count);
+    const total = parseToInt(totalResult[0].count);
 
     // Get paginated data
     const data = await baseQuery

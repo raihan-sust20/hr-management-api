@@ -11,6 +11,7 @@ import {
 } from './attendance.type';
 import { AppError } from '../../common/middlewares/error.middleware';
 import { HTTP_STATUS, ERROR_CODES } from '../../common/constants/http-status.constant';
+import { parseToInt } from '../../common/utils/general.util';
 
 @injectable()
 export class AttendanceService {
@@ -92,8 +93,8 @@ export class AttendanceService {
   }
 
   public async listAttendance(query: IListAttendanceQuery): Promise<IPaginatedAttendanceResponse> {
-    const page = Number(query.page) || 1;
-    const limit = Math.min(Number(query.limit) || 20, 100);
+    const page = parseToInt(query.page) || 1;
+    const limit = Math.min(parseToInt(query.limit) || 20, 100);
 
     // Validate 3-month backward limit
     this.validateQueryDateRange(query);

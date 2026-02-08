@@ -14,6 +14,7 @@ import { AppError } from '../../common/middlewares/error.middleware';
 import { HTTP_STATUS, ERROR_CODES } from '../../common/constants/http-status.constant';
 import fs from 'fs';
 import path from 'path';
+import { parseToInt } from '../../common/utils/general.util';
 
 @injectable()
 export class EmployeeService {
@@ -312,8 +313,8 @@ export class EmployeeService {
   }
 
   public async listEmployees(query: IListEmployeesQuery): Promise<IPaginatedEmployeesResponse> {
-    const page = Number(query.page) || 1;
-    const limit = Math.min(Number(query.limit) || 20, 100);
+    const page = parseToInt(query.page) || 1;
+    const limit = Math.min(parseToInt(query.limit) || 20, 100);
     console.log('Listing employees with query:', { ...query, page, limit });
 
     const { data, total } = await this.employeeRepository.findAllWithFilters(query);

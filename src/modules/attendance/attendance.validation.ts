@@ -59,57 +59,52 @@ export const attendanceValidation = {
       'number.max': 'Limit cannot exceed 100',
     }),
 
-    sortBy: Joi.string()
-      .valid('date', 'check_in_time', 'employee_id')
-      .default('date')
-      .messages({
-        'any.only': 'Sort by must be one of: date, check_in_time, employee_id',
-      }),
+    sortBy: Joi.string().valid('date', 'check_in_time', 'employee_id').default('date').messages({
+      'any.only': 'Sort by must be one of: date, check_in_time, employee_id',
+    }),
 
     sortOrder: Joi.string().valid('asc', 'desc').default('desc').messages({
       'any.only': 'Sort order must be either asc or desc',
     }),
-  }).custom((value, helpers) => {
-    // Mutually exclusive: date vs date range
-    if (value.date && (value.start_date || value.end_date)) {
-      return helpers.error('any.invalid', {
-        message: 'Cannot use date filter together with start_date/end_date range filter',
-      });
-    }
-
-    // Both start_date and end_date required together
-    if (value.start_date && !value.end_date) {
-      return helpers.error('any.invalid', {
-        message: 'end_date is required when start_date is provided',
-      });
-    }
-
-    if (value.end_date && !value.start_date) {
-      return helpers.error('any.invalid', {
-        message: 'start_date is required when end_date is provided',
-      });
-    }
-
-    // Validate date range: max 90 days
-    if (value.start_date && value.end_date) {
-      const startDate = new Date(value.start_date);
-      const endDate = new Date(value.end_date);
-      const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays > 90) {
-        return helpers.error('any.invalid', {
-          message: 'Date range cannot exceed 90 days',
-        });
+  })
+    .custom((value, helpers) => {
+      // Mutually exclusive: date vs date range
+      if (value.date && (value.start_date || value.end_date)) {
+        return helpers.error('mutual.exclusive');
       }
 
-      if (startDate > endDate) {
-        return helpers.error('any.invalid', {
-          message: 'start_date must be before or equal to end_date',
-        });
+      // Both start_date and end_date required together
+      if (value.start_date && !value.end_date) {
+        return helpers.error('start_date.no_end_date');
       }
-    }
 
-    return value;
-  }),
+      if (value.end_date && !value.start_date) {
+        return helpers.error('end_date.no_start_date');
+      }
+
+      // Validate date range: max 90 days
+      if (value.start_date && value.end_date) {
+        const startDate = new Date(value.start_date);
+        const endDate = new Date(value.end_date);
+        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 90) {
+          return helpers.error('date_range.exceed');
+        }
+
+        if (startDate > endDate) {
+          return helpers.error('date_range.invalid');
+        }
+      }
+
+      return value;
+    })
+    .messages({
+      'mutual.exclusive': 'Cannot specify both date and date range (start_date/end_date)',
+      'start_date.no_end_date': 'start_date must be provided when end_date is specified',
+      'end_date.no_start_date': 'end_date must be provided when start_date is specified',
+      'date_range.exceed': 'Date range cannot exceed 90 days',
+      'date_range.invalid': 'start_date must be before or equal to end_date',
+    }),
 };
