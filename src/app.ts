@@ -14,6 +14,7 @@ import { ResponseUtil } from './common/utils/response.util';
 
 import authRoutes from './modules/auth/auth.route';
 import employeeRoutes from './modules/employee/employee.route';
+import attendanceRoutes from './modules/attendance/attendance.route';
 
 // Register dependencies
 container.register(DatabaseConfig, { useClass: DatabaseConfig });
@@ -98,6 +99,7 @@ class App {
     // Example: this.app.use(`${apiPrefix}/auth`, authRoutes);
     this.app.use(`${apiPrefix}/auth`, authRoutes);
     this.app.use(`${apiPrefix}/employees`, employeeRoutes);
+    this.app.use(`${apiPrefix}/attendance`, attendanceRoutes);
   }
 
   private initializeErrorHandling(): void {

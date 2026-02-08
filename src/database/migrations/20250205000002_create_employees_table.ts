@@ -18,7 +18,6 @@ export async function up(knex: Knex): Promise<void> {
 
     // Indexes for better search performance
     table.index('name', 'idx_employees_name');
-    table.index('hiring_date', 'idx_employees_hiring_date');
   });
 
   // Create trigger for updated_at timestamp
