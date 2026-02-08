@@ -1,7 +1,14 @@
 import { injectable, inject } from 'tsyringe';
 import { AttendanceRepository } from './attendance.repository';
 import { EmployeeRepository } from '../employee/employee.repository';
-import { ICreateAttendanceDto, IAttendanceResponseDto, IAttendance } from './attendance.type';
+import {
+  ICreateAttendanceDto,
+  IAttendanceResponseDto,
+  IAttendance,
+  IListAttendanceQuery,
+  IPaginatedAttendanceResponse,
+  IAttendanceListItemDto,
+} from './attendance.type';
 import { AppError } from '../../common/middlewares/error.middleware';
 import { HTTP_STATUS, ERROR_CODES } from '../../common/constants/http-status.constant';
 
@@ -10,6 +17,7 @@ export class AttendanceService {
   private readonly businessHoursStart: number;
   private readonly businessHoursEnd: number;
   private readonly retroactiveLimitDays: number;
+  private readonly maxQueryMonths: number = 3;
 
   constructor(
     @inject(AttendanceRepository) private attendanceRepository: AttendanceRepository,
@@ -83,6 +91,62 @@ export class AttendanceService {
     return this.toAttendanceResponse(attendance);
   }
 
+  public async listAttendance(query: IListAttendanceQuery): Promise<IPaginatedAttendanceResponse> {
+    const page = Number(query.page) || 1;
+    const limit = Math.min(Number(query.limit) || 20, 100);
+
+    // Validate 3-month backward limit
+    this.validateQueryDateRange(query);
+
+    // Fetch data from repository
+    const { data, total } = await this.attendanceRepository.findAllWithFilters(query);
+
+    const totalPages = Math.ceil(total / limit);
+
+    // Convert to response DTOs
+    const attendanceList = data.map((attendance) => this.toAttendanceListItem(attendance));
+
+    return {
+      data: attendanceList,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
+  }
+
+  private validateQueryDateRange(query: IListAttendanceQuery): void {
+    const now = new Date();
+    const maxPastDate = new Date();
+    maxPastDate.setMonth(maxPastDate.getMonth() - this.maxQueryMonths);
+
+    // Check single date filter
+    if (query.date) {
+      const queryDate = new Date(query.date);
+      if (queryDate < maxPastDate) {
+        throw new AppError(
+          `Cannot query attendance older than ${this.maxQueryMonths} months`,
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.VALIDATION_ERROR
+        );
+      }
+    }
+
+    // Check date range filter
+    if (query.start_date) {
+      const startDate = new Date(query.start_date);
+      if (startDate < maxPastDate) {
+        throw new AppError(
+          `Cannot query attendance older than ${this.maxQueryMonths} months`,
+          HTTP_STATUS.BAD_REQUEST,
+          ERROR_CODES.VALIDATION_ERROR
+        );
+      }
+    }
+  }
+
   private async validateEmployeeExists(employeeId: number): Promise<void> {
     const employee = await this.employeeRepository.findById(employeeId);
 
@@ -151,6 +215,15 @@ export class AttendanceService {
   }
 
   private toAttendanceResponse(attendance: IAttendance): IAttendanceResponseDto {
+    return {
+      id: attendance.id,
+      employee_id: attendance.employee_id,
+      date: this.formatDate(attendance.date),
+      check_in_time: attendance.check_in_time.toISOString(),
+    };
+  }
+
+  private toAttendanceListItem(attendance: IAttendance): IAttendanceListItemDto {
     return {
       id: attendance.id,
       employee_id: attendance.employee_id,

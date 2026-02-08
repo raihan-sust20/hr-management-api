@@ -1,6 +1,132 @@
-Business hours: 6:00 AM - 10:00 PM acceptable? - yes
- Should this be configurable via .env? - yes, 
-Retroactive limit: 7 days acceptable? Or should it be stricter (e.g., same day only)? - 7 days is acceptable.
-Weekends: Allow check-ins on Saturday/Sunday? - yes
-Update behavior: When updating existing check-in, should we validate that new time is also within business hours? - yes
-Timezone: Use UTC timestamps throughout? (Recommended for consistency) - yes
+1. Authentication & Authorization
+
+Should this endpoint require authentication? - yes
+Any specific role/permission requirements? - no
+
+2. Filter Parameters
+
+employee_id filter:
+
+Optional or required?
+Should it support multiple employee IDs (e.g., ?employee_id=1,2,3)? -
+
+
+date filter:
+
+Single date only (exact match)? - yes
+Format: YYYY-MM-DD? - yes
+
+
+date range filter:
+
+Parameter names: start_date and end_date? Or from_date and to_date? - start_date and end_date
+Should date and date range be mutually exclusive, or can they work together? - mutually exclusive
+If only start_date provided, should it fetch from that date onwards? - if start_date is provided end_date must also be provided
+If only end_date provided, should it fetch up to that date? - if end_date is provided start_date must also be provided
+Maximum allowed date range (e.g., 90 days, 1 year)? - 90 days
+
+
+
+3. Pagination
+
+Should this endpoint support pagination?
+If yes:
+
+Default page size? (e.g., 20, 50, 100) - 20
+Maximum page size limit? - 100
+Parameters: page and limit? - yes, page and limit
+
+
+
+4. Sorting
+
+Should results be sortable? - yes
+If yes:
+
+Which fields should be sortable? (date, check_in_time, employee_id, id?) - date, check_in_time, employee_id
+Default sort order? (e.g., date DESC, check_in_time ASC) - date DESC
+Parameters: sortBy and sortOrder? - yes
+
+
+
+5. Response Format
+
+Should employee details be included in the response? - minimal employee details will be included
+
+If yes, which fields? (id, name only? or full employee object?)
+Should it be nested or flattened?
+
+
+Response structure options:
+Option A - Minimal (attendance only):
+
+json  {
+    "id": 1,
+    "employee_id": 1,
+    "date": "2026-02-08",
+    "check_in_time": "2026-02-08T09:30:00.000Z"
+  }
+Option B - With employee name:
+json  {
+    "id": 1,
+    "employee_id": 1,
+    "employee_name": "John Doe",
+    "date": "2026-02-08",
+    "check_in_time": "2026-02-08T09:30:00.000Z"
+  }
+Option C - Nested employee object:
+json  {
+    "id": 1,
+    "employee": {
+      "id": 1,
+      "name": "John Doe",
+      "designation": "Software Engineer"
+    },
+    "date": "2026-02-08",
+    "check_in_time": "2026-02-08T09:30:00.000Z"
+  }
+```
+
+- Option C
+
+- Should it follow the pagination response format with `meta` object (like employee list endpoint)?
+
+## 6. **Default Behavior**
+- If no filters are provided, what should happen?
+  - Return all attendance records (with pagination)? - 
+  - Return error asking for at least one filter?
+  - Return only current month's data?
+  - Return last N days of data?
+
+--- Return all attendance records (with pagination)
+## 7. **Business Rules**
+- Should there be any limit on how far back users can query? (e.g., only last 1 year of data) - yes, at most 3 months
+- Should deleted employees' attendance still be visible? - no
+
+## 8. **Query Examples for Clarification**
+
+Please confirm which of these queries should be supported:
+```
+# All attendance (paginated)
+GET /attendance?page=1&limit=20
+
+# Specific employee
+GET /attendance?employee_id=1
+
+# Specific date
+GET /attendance?date=2026-02-08
+
+# Date range
+GET /attendance?start_date=2026-02-01&end_date=2026-02-08
+
+# Multiple filters
+GET /attendance?employee_id=1&start_date=2026-02-01&end_date=2026-02-08
+
+# With sorting
+GET /attendance?employee_id=1&sortBy=date&sortOrder=desc
+9. Swagger Documentation
+
+Should I include comprehensive Swagger docs similar to employee endpoints? - yes
+
+
+Please provide answers to these questions so I can implement the endpoint exactly as you need it!
