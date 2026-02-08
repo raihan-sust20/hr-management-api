@@ -39,3 +39,15 @@ CREATE TRIGGER update_employees_updated_at
   BEFORE UPDATE ON employees
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
+
+
+CREATE TABLE attendance (
+  id              SERIAL PRIMARY KEY,
+  employee_id     INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+  date            DATE NOT NULL,
+  check_in_time   TIMESTAMP NOT NULL,
+  
+  CONSTRAINT uq_attendance_employee_date UNIQUE (employee_id, date)
+);
+
+CREATE INDEX idx_attendance_date ON attendance(date);
